@@ -38,5 +38,5 @@ Add your screenshot here, for example:
 Install dependencies:
 
 ```sh
-pip install pillow requests apprise
+pip install -r requirements.txt
 ```
