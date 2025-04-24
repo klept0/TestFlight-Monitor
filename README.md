@@ -17,14 +17,13 @@ The app features a modern, resizable Tkinter interface with dark/light mode, dyn
 - **Minimize to taskbar or (optionally) system tray**
 - **No credentials hardcoded**—all settings are editable and saved locally
 
+
 ---
 
 ## Screenshots
 
-<!--
-Add your screenshot here, for example:
-![screenshot](screenshot.png)
--->
+![light mode](https://github.com/user-attachments/assets/e0fe4664-8760-46a9-bf4d-9e47200beb34)
+![dark mode](https://github.com/user-attachments/assets/e47a896f-bec7-4e30-ab7e-beb2549128b7)
 
 ---
 
