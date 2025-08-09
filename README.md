@@ -89,6 +89,10 @@ Environment variable overrides (comma-separated where applicable):
 | LOG_FILE | Log filename |
 | TFM_NOTIFY_COOLDOWN | Seconds between notifications for same app (default 600) |
 | TFM_LOG_JSON | Force JSON logs if set (1/true) |
+| PUSHOVER_USER_KEY | Pushover user key |
+| PUSHOVER_API_TOKEN | Pushover application API token |
+| PUSHOVER_PRIORITY | Optional Pushover priority (-2..2) |
+| PUSHOVER_SOUND | Optional Pushover sound name |
 
 ## Logging
 
@@ -111,7 +115,18 @@ python -m main --log-utc
 
 ## Notifications
 
-Notifications use [Apprise](https://github.com/caronc/apprise). Configure any combination of Discord, Slack, or Email. Per-app cooldown defaults to 600s (override via `TFM_NOTIFY_COOLDOWN`).
+Notifications use [Apprise](https://github.com/caronc/apprise). Configure Discord, Slack, Email, or Pushover. Per-app cooldown defaults to 600s (override via `TFM_NOTIFY_COOLDOWN`).
+
+Pushover setup (example):
+
+```sh
+export PUSHOVER_USER_KEY=your_user_key
+export PUSHOVER_API_TOKEN=your_app_token
+# optional
+export PUSHOVER_PRIORITY=1
+export PUSHOVER_SOUND=alien
+python -m main --log-level INFO
+```
 
 ## Testing
 

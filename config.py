@@ -19,6 +19,11 @@ class NotificationConfig:
     email_username: Optional[str] = None
     email_password: Optional[str] = None
     email_recipients: List[str] = field(default_factory=list)
+    # Pushover
+    pushover_user_key: Optional[str] = None
+    pushover_api_token: Optional[str] = None
+    pushover_priority: Optional[str] = None  # -2..2 per Pushover
+    pushover_sound: Optional[str] = None
 
 
 @dataclass
@@ -28,17 +33,20 @@ class Config:
     app_ids: List[str] = field(default_factory=list)
     check_interval_seconds: int = 300  # seconds between cycles
     cache_ttl_minutes: int = 5
-    notifications: NotificationConfig = field(default_factory=NotificationConfig)
+    notifications: NotificationConfig = field(
+        default_factory=NotificationConfig
+    )
     log_level: str = "INFO"
     log_file: str = "testflight_monitor.log"
 
     def __post_init__(self) -> None:
-        # If user provided app_ids in constructor, remember so file won't override
-        explicit = bool(self.app_ids)
-        self._load_from_env()
-        # Only load app_ids from file if still empty
-        self._load_from_file(load_app_ids=not self.app_ids and not explicit)
-        self._validate()
+    # If user provided app_ids in constructor, remember so file
+    # won't override them from config.json
+    explicit = bool(self.app_ids)
+    self._load_from_env()
+    # Only load app_ids from file if still empty
+    self._load_from_file(load_app_ids=not self.app_ids and not explicit)
+    self._validate()
 
     def _load_from_env(self) -> None:
         """Load configuration from environment variables."""
@@ -56,7 +64,9 @@ class Config:
             self.cache_ttl_minutes = int(env_ttl)
 
         # Notification settings
-        self.notifications.discord_webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
+        self.notifications.discord_webhook_url = os.getenv(
+            "DISCORD_WEBHOOK_URL"
+        )
         self.notifications.slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
         self.notifications.email_smtp_server = os.getenv("EMAIL_SMTP_SERVER")
 
@@ -73,6 +83,20 @@ class Config:
                 r.strip() for r in env_recipients.split(",") if r.strip()
             ]
 
+        # Pushover
+        self.notifications.pushover_user_key = os.getenv(
+            "PUSHOVER_USER_KEY", self.notifications.pushover_user_key
+        )
+        self.notifications.pushover_api_token = os.getenv(
+            "PUSHOVER_API_TOKEN", self.notifications.pushover_api_token
+        )
+        self.notifications.pushover_priority = os.getenv(
+            "PUSHOVER_PRIORITY", self.notifications.pushover_priority
+        )
+        self.notifications.pushover_sound = os.getenv(
+            "PUSHOVER_SOUND", self.notifications.pushover_sound
+        )
+
         # Logging settings
         self.log_level = os.getenv("LOG_LEVEL", self.log_level)
         self.log_file = os.getenv("LOG_FILE", self.log_file)
@@ -88,7 +112,11 @@ class Config:
             try:
                 with open(config_file, "r") as f:
                     config_data = json.load(f)
-                if load_app_ids and "app_ids" in config_data and not self.app_ids:
+                if (
+                    load_app_ids
+                    and "app_ids" in config_data
+                    and not self.app_ids
+                ):
                     self.app_ids = config_data["app_ids"]
                 # Other scalar fields
                 for key, value in config_data.items():
@@ -98,7 +126,7 @@ class Config:
                         setattr(self, key, value)
                 notif = config_data.get("notifications", {}) or {}
                 if isinstance(notif, dict):
-                    for k, v in notif.items():
+                    for k, v in notif.items():  # noqa: B905
                         if hasattr(self.notifications, k):
                             setattr(self.notifications, k, v)
                 logger.info("Configuration loaded from config.json")
@@ -109,7 +137,8 @@ class Config:
         """Validate configuration values."""
         if not self.app_ids:
             raise ValueError(
-                "No app IDs configured. Set TESTFLIGHT_APP_IDS env var or config.json"
+                "No app IDs configured. Set TESTFLIGHT_APP_IDS env var or "
+                "config.json"
             )
 
         # Validate app IDs format
@@ -119,7 +148,9 @@ class Config:
                 raise ValueError(f"Invalid app ID: {app_id}")
 
         # Clean up app IDs
-        self.app_ids = [app_id.strip() for app_id in self.app_ids if app_id.strip()]
+        self.app_ids = [
+            app_id.strip() for app_id in self.app_ids if app_id.strip()
+        ]
 
         if self.check_interval_seconds < 60:
             logger.warning(
@@ -136,17 +167,21 @@ class Config:
                 self.notifications.discord_webhook_url,
                 self.notifications.slack_webhook_url,
                 self.notifications.email_smtp_server,
+                self.notifications.pushover_user_key
+                and self.notifications.pushover_api_token,
             ]
         )
 
         if not has_notification:
             logger.warning("No notification methods configured")
 
-        logger.info("Configuration validated. Monitoring %d apps", len(self.app_ids))
+        logger.info(
+            "Configuration validated. Monitoring %d apps", len(self.app_ids)
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary for logging/debugging."""
-        config_dict = {
+        config_dict: Dict[str, Any] = {
             "app_ids": self.app_ids,
             "check_interval_seconds": self.check_interval_seconds,
             "cache_ttl_minutes": self.cache_ttl_minutes,
@@ -156,6 +191,10 @@ class Config:
                 "discord": bool(self.notifications.discord_webhook_url),
                 "slack": bool(self.notifications.slack_webhook_url),
                 "email": bool(self.notifications.email_smtp_server),
+                "pushover": bool(
+                    self.notifications.pushover_user_key
+                    and self.notifications.pushover_api_token
+                ),
             },
         }
         return config_dict

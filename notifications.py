@@ -21,7 +21,7 @@ class NotificationManager:
     def __init__(self, config: Config):  # type: ignore[name-defined]
         self.config = config
         self.apprise_obj = apprise.Apprise()
-        self.last_notification = {}
+        self.last_notification: dict[str, datetime] = {}
         # Cooldown seconds per app (default 600); allow override via env
         try:
             self.cooldown = int(os.getenv("TFM_NOTIFY_COOLDOWN", "600"))
@@ -68,6 +68,25 @@ class NotificationManager:
                 added_count += 1
                 logger.info("Email notification configured")
 
+        # Add Pushover last (independent)
+        if (
+            self.config.notifications.pushover_user_key
+            and self.config.notifications.pushover_api_token
+        ):
+            pu = self.config.notifications
+            base = f"pushover://{pu.pushover_user_key}@" f"{pu.pushover_api_token}/"
+            params: list[str] = []
+            if pu.pushover_priority:
+                params.append(f"priority={pu.pushover_priority}")
+            if pu.pushover_sound:
+                params.append(f"sound={pu.pushover_sound}")
+            if params:
+                base = base + "?" + "&".join(params)
+            if self.apprise_obj.add(base):
+                added_count += 1
+                logger.info("Pushover notification configured")
+
+        # Final count log
         logger.info(f"Configured {added_count} notification services")
 
     async def send_notification(
@@ -85,8 +104,10 @@ class NotificationManager:
 
         try:
             # Send notification through all configured services
-            success = self.apprise_obj.notify(
-                title=title, body=message, notify_type=apprise.NotifyType.SUCCESS
+            success = self.apprise_obj.notify(  # type: ignore[call-arg]
+                title=title,
+                body=message,
+                notify_type=apprise.NotifyType.SUCCESS,  # type: ignore[attr-defined]
             )
 
             if success:
