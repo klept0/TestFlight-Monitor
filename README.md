@@ -1,5 +1,12 @@
 # TestFlight Monitor
 
+![Status](https://github.com/klept0/TestFlight-Monitor/actions/workflows/ci.yml/badge.svg)
+![Python Versions](https://img.shields.io/badge/python-3.10--3.13-blue)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Coverage](https://img.shields.io/badge/coverage-unknown-lightgrey)
+![Lint: Ruff](https://img.shields.io/badge/lint-ruff-%23cc7722)
+![Types: mypy](https://img.shields.io/badge/types-mypy-informational)
+
 A lightweight Python CLI tool to monitor [Apple TestFlight](https://testflight.apple.com/) invite codes for open slots, with notification support via [Apprise](https://github.com/caronc/apprise).
 
 ---
@@ -11,9 +18,6 @@ A lightweight Python CLI tool to monitor [Apple TestFlight](https://testflight.a
 - Structured / JSON logging support
 - Graceful shutdown via signals
 - One-off check mode (`--check`)
-
-
----
 
 ---
 
@@ -68,14 +72,7 @@ Configuration is loaded from environment variables and an optional `config.json`
 `config.json` example:
 
 ```json
-{
-	"app_ids": ["FAKECODE", "ANOTHER"],
-	"check_interval_seconds": 300,
-	"cache_ttl_minutes": 5,
-	"notifications": {
-		"discord_webhook_url": "https://discord.com/api/webhooks/.../..."
-	}
-}
+{ "app_ids": ["FAKECODE", "ANOTHER"], "check_interval_seconds": 300, "cache_ttl_minutes": 5, "notifications": { "discord_webhook_url": "https://discord.com/api/webhooks/.../..." } }
 ```
 
 Environment variable overrides (comma-separated where applicable):
@@ -126,6 +123,8 @@ pytest -q
 
 The tests mock network calls; no external HTTP traffic is performed.
 
+To publish real coverage to a service (Codecov or Coveralls), add their action after the coverage report step and update the Coverage badge to reflect the service URL.
+
 ## Future Enhancements
 
 - Advanced HTML parsing (structured) for higher accuracy
@@ -133,7 +132,7 @@ The tests mock network calls; no external HTTP traffic is performed.
 
 ---
 
-## Minimal Deployment
+## Repository Layout
 
 Current repository contents (lean runtime + minimal scaffolding):
 
@@ -168,37 +167,37 @@ Update `config.json` or use environment variables (`TESTFLIGHT_APP_IDS`, etc.) t
 
 ---
 
-## Quick Start (Ready for Use)
+## Quick Start
 
-1. Populate `config.json` (or set `TESTFLIGHT_APP_IDS`). At minimum:
+- Populate `config.json` (or set `TESTFLIGHT_APP_IDS`). At minimum:
 
-	```json
-	{ "app_ids": ["YOURCODE" ] }
-	```
+```json
+{ "app_ids": ["YOURCODE" ] }
+```
 
-2. Install dependencies:
+- Install dependencies:
 
-	```sh
-	pip install -r requirements.txt
-	```
+```sh
+pip install -r requirements.txt
+```
 
-3. Run continuous monitoring:
+- Run continuous monitoring:
 
-	```sh
-	python -m main --log-level INFO
-	```
+```sh
+python -m main --log-level INFO
+```
 
-4. (Optional) Structured logs:
+- (Optional) Structured logs:
 
-	```sh
-	python -m main --log-json --log-utc
-	```
+```sh
+python -m main --log-json --log-utc
+```
 
-5. One-off check:
+- One-off check:
 
-	```sh
-	python -m main --check
-	```
+```sh
+python -m main --check
+```
 
 Environment-only setup (no config file):
 
@@ -211,51 +210,9 @@ The application is now production-ready in CLI form (GUI removed). Add your pref
 
 ---
 
-## Recommended Enhancements (Optional)
+## License
 
-To harden and automate the project, consider adding:
+This project is released under the MIT License. See `LICENSE` for details.
 
-1. CI Workflow Expansion (`.github/workflows/ci.yml`):
-	- Run matrix for Python 3.10–3.13
-	- Steps: install deps, run `pytest -q`, upload coverage (Codecov)
-2. Type Checking:
-	- Add mypy config (e.g. `mypy.ini`) and run in CI
-3. Linting & Formatting:
-	- Tools: `ruff` (fast lint + format) or `black` + `isort`
-4. Security Scans:
-	- `pip-audit` or `safety` in CI for dependency CVEs
-5. Packaging:
-	- Fill in `pyproject.toml` with project metadata and entry point
-6. Container Image:
-	- Provide minimal Python slim image with non-root user
-7. Observability:
-	- Add Prometheus-style metrics endpoint (if turned into a service)
-8. Retry / Circuit Breaking:
-	- Wrap network fetch with jittered backoff & failure counters
-9. Notification Rate Limiting:
-	- Maintain per-app last-notified timestamp to avoid spam (extend existing logic if added)
-10. Test Coverage Targets:
-	- Add `coverage` run and fail CI under threshold (e.g., 85%)
 
- 
-### Example CI snippet (conceptual)
-```yaml
-name: CI
-on: [push, pull_request]
-jobs:
-  test:
-	 runs-on: ubuntu-latest
-	 strategy:
-		matrix:
-		  python-version: ["3.10", "3.11", "3.12", "3.13"]
-	 steps:
-		- uses: actions/checkout@v4
-		- uses: actions/setup-python@v5
-		  with:
-			 python-version: ${{ matrix.python-version }}
-		- run: pip install -r requirements.txt pytest
-		- run: pytest -q
-```
-
-If you want any of these implemented now, specify which and they can be added directly.
-
+<!-- End of public README -->
