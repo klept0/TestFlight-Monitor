@@ -14,6 +14,7 @@ def test_monitor_cycle_basic():
 
         async def fake_fetch(app_id: str) -> bool:
             return False
+
         monitor._fetch_availability = fake_fetch  # type: ignore
         async with monitor:
             results = await monitor.check_multiple_apps(cfg.app_ids)
@@ -33,6 +34,7 @@ def test_cli_single_check():
         app.setup_logging(level="DEBUG")
         # Patch monitor fetch inside single check by subclass substitution
         import main as main_module
+
         orig_cls = main_module.TestFlightMonitor
         # Provide env var so internal Config() validation passes
         prev = os.environ.get("TESTFLIGHT_APP_IDS")
@@ -40,10 +42,8 @@ def test_cli_single_check():
 
         class FakeMonitor(orig_cls):  # type: ignore
             async def check_multiple_apps(self, app_ids):  # type: ignore
-                return [
-                    {"app_id": a, "available": False}
-                    for a in app_ids
-                ]
+                return [{"app_id": a, "available": False} for a in app_ids]
+
         # Swap symbol in imported module
         main_module.TestFlightMonitor = FakeMonitor  # type: ignore
         try:
@@ -69,6 +69,21 @@ def test_interpret_page_heuristics():
     assert monitor.interpret_page(positive) is True
     assert monitor.interpret_page(negative) is False
     assert monitor.interpret_page(ambiguous) is False
+
+
+def test_cli_version_flag(capsys=None):  # type: ignore[no-untyped-def]
+    import sys
+    import main as main_module
+
+    argv_backup = sys.argv[:]  # keep copy
+    sys.argv = ["main.py", "--version"]
+    try:
+        main_module.main()
+    finally:
+        sys.argv = argv_backup
+    if capsys is not None:  # pragma: no branch
+        captured = capsys.readouterr().out.strip()  # type: ignore[attr-defined]  # noqa: E501
+        assert captured
 
 
 def test_monitor_backoff_behavior():

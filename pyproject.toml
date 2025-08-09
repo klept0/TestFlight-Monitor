@@ -1,2 +1,37 @@
-## Stub pyproject retained only for potential future packaging.
-## Development tooling configuration removed for lean deployment.
+[project]
+name = "testflight-monitor"
+version = "0.1.0"
+description = "CLI tool to monitor Apple TestFlight invite codes for slot availability with notification support"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [ { name = "klept0" } ]
+keywords = ["testflight", "monitoring", "notifications", "apprise", "cli"]
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Intended Audience :: Developers",
+	"License :: OSI Approved :: MIT License",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"Programming Language :: Python :: 3.13",
+	"Topic :: Utilities",
+]
+dependencies = [
+	"requests",
+	"Pillow",
+	"apprise",
+	"cairosvg",
+	"aiohttp",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "mypy", "ruff", "coverage"]
+
+[project.scripts]
+testflight-monitor = "main:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"

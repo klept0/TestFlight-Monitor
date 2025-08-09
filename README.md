@@ -214,5 +214,39 @@ The application is now production-ready in CLI form (GUI removed). Add your pref
 
 This project is released under the MIT License. See `LICENSE` for details.
 
+## Release & Installation
+
+Current version: 0.1.0 (alpha).
+
+Install from source (until published to PyPI):
+
+```sh
+git clone https://github.com/klept0/TestFlight-Monitor.git
+cd TestFlight-Monitor
+python -m venv .venv && source .venv/bin/activate
+pip install .[dev]  # or: pip install .
+testflight-monitor --help
+```
+
+Planned PyPI install (after publishing):
+
+```sh
+pip install testflight-monitor
+testflight-monitor --help
+```
+
+Cutting a release:
+
+1. Update `__version__` in `__init__.py` & `[project] version` in `pyproject.toml`.
+2. Update badges / README examples if needed.
+3. Commit: `git commit -am "chore: release vX.Y.Z"`.
+4. Tag: `git tag -a vX.Y.Z -m "Release vX.Y.Z" && git push --tags`.
+5. Build & upload (once on PyPI):
+
+```sh
+python -m build
+twine upload dist/*
+```
+
 
 <!-- End of public README -->

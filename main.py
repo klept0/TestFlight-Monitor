@@ -306,10 +306,25 @@ def main():
     parser.add_argument(
         "--self-test",
         action="store_true",
-        help="Run a quick internal self-test (config load + one dry cycle) and exit",
+        help=(
+            "Run a quick internal self-test (config load + one dry cycle) and " "exit"
+        ),
+    )
+    parser.add_argument(
+        "--version",
+        action="store_true",
+        help="Print version and exit",
     )
 
     args = parser.parse_args()
+
+    if args.version:
+        try:
+            from __init__ import __version__  # type: ignore
+        except Exception:  # pragma: no cover
+            __version__ = "unknown"
+        print(__version__)
+        return
 
     if args.validate:
         try:
@@ -331,8 +346,9 @@ def main():
     )
 
     if args.self_test:
-        # Minimal self-test: validate config and run one cycle with network disabled
-        try:
+        # Minimal self-test: validate config and run one cycle with network
+        # disabled (network fetch monkeypatched to always return False)
+        try:  # noqa: BLE001 - intentional broad catch for user feedback
             cfg = Config()
             app.monitor = TestFlightMonitor(cfg)
             # Monkeypatch monitor network fetch to always return False quickly
@@ -350,7 +366,7 @@ def main():
             asyncio.run(run_once())
             print("✓ Self-test passed")
             sys.exit(0)
-        except Exception as e:  # pragma: no cover
+        except Exception as e:  # noqa: BLE001 pragma: no cover
             print(f"✗ Self-test failed: {e}")
             sys.exit(5)
 
