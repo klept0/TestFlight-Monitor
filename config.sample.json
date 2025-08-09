@@ -1,0 +1,15 @@
+{
+	"app_ids": ["YOUR_APP_ID_HERE"],
+	"check_interval_seconds": 300,
+	"cache_ttl_minutes": 5,
+	"log_level": "INFO",
+	"notifications": {
+		"discord_webhook_url": null,
+		"slack_webhook_url": null,
+		"email_smtp_server": null,
+		"email_smtp_port": 587,
+		"email_username": null,
+		"email_password": null,
+		"email_recipients": []
+	}
+}
