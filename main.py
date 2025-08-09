@@ -11,9 +11,11 @@ import contextlib
 import json
 
 from config import Config
+
 try:  # monitor module may not yet exist during partial development
     from monitor import TestFlightMonitor  # type: ignore
 except Exception:  # pragma: no cover - fallback stub
+
     class TestFlightMonitor:  # type: ignore
         def __init__(self, *_: Any, **__: Any) -> None:
             pass
@@ -30,12 +32,9 @@ except Exception:  # pragma: no cover - fallback stub
         async def check_multiple_apps(
             self, app_ids: List[str]
         ) -> List[Dict[str, Any]]:  # pragma: no cover
-            return [
-                {"app_id": a, "available": False}
-                for a in app_ids
-            ]
+            return [{"app_id": a, "available": False} for a in app_ids]
 
- 
+
 class CLIApplication:
     """CLI with improved logging, signal handling, and resilience."""
 
@@ -82,6 +81,7 @@ class CLIApplication:
         json_env = os.getenv("TFM_LOG_JSON") in {"1", "true", "TRUE", "yes"}
         use_json = json_logs or json_env
         if use_json:
+
             class _JSONFormatter(logging.Formatter):  # noqa: D401 - simple
                 def format(
                     self, record: logging.LogRecord
@@ -103,10 +103,9 @@ class CLIApplication:
                         "msg": record.getMessage(),
                     }
                     if record.exc_info:
-                        base["exc_info"] = self.formatException(
-                            record.exc_info
-                        )
+                        base["exc_info"] = self.formatException(record.exc_info)
                     return json.dumps(base, ensure_ascii=False)
+
             formatter = _JSONFormatter()
         else:
             fmt = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
@@ -122,11 +121,7 @@ class CLIApplication:
             root.addHandler(file_handler)
             root.addHandler(console_handler)
 
-        resolved_level = (
-            level
-            or os.getenv("TFM_LOG_LEVEL")
-            or "INFO"
-        ).upper()
+        resolved_level = (level or os.getenv("TFM_LOG_LEVEL") or "INFO").upper()
         if resolved_level not in {
             "CRITICAL",
             "ERROR",
@@ -139,9 +134,7 @@ class CLIApplication:
         root.setLevel(resolved_level)
         self._logging_initialized = True
         self.logger = logging.getLogger(__name__)
-        self.logger.debug(
-            "Logging initialized (level=%s, utc=%s)", resolved_level, utc
-        )
+        self.logger.debug("Logging initialized (level=%s, utc=%s)", resolved_level, utc)
 
     # ------------------------- Signal Handling -----------------------------
     def setup_signal_handlers(self) -> None:
@@ -171,95 +164,84 @@ class CLIApplication:
     async def _monitor_loop(self, config: Config) -> None:
         """Monitoring loop with backoff and fixed cadence."""
         assert self.monitor is not None
-        backoff_seconds = 5
-        max_backoff = 300
         interval = int(getattr(config, "check_interval_seconds", 60))
+        backoff: float = 0.2 if interval <= 1 else 5.0
+        max_backoff = 300.0
         self._stop_event = asyncio.Event()
         async with self.monitor:
             cycle = 0
             while self.running:
-                cycle_start_monotonic = asyncio.get_running_loop().time()
                 cycle += 1
+                cycle_start = asyncio.get_running_loop().time()
                 try:
                     self.logger.debug("Starting cycle %d", cycle)
                     await self.monitor.run_cycle()
-                    backoff_seconds = 5  # reset after success
+                    backoff = 0.2 if interval <= 1 else 5.0  # reset
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:  # noqa: BLE001
                     self.logger.error(
-                        "Cycle %d error (retry in %ss): %s",
+                        "Cycle %d error (retry in %.2fs): %s",
                         cycle,
-                        backoff_seconds,
+                        backoff,
                         e,
                         exc_info=True,
                     )
                     try:
-                        await asyncio.wait_for(
-                            self._stop_event.wait(), timeout=backoff_seconds
-                        )
+                        await asyncio.wait_for(self._stop_event.wait(), timeout=backoff)
                     except asyncio.TimeoutError:
                         pass
-                    backoff_seconds = min(
-                        int(backoff_seconds * 1.8), max_backoff
-                    )
+                    backoff = min(backoff * 1.8, max_backoff)
                     continue
 
-                elapsed = (
-                    asyncio.get_running_loop().time() - cycle_start_monotonic
-                )
-                remaining = max(0, interval - int(elapsed))
+                elapsed = asyncio.get_running_loop().time() - cycle_start
+                remaining = max(0.0, interval - elapsed)
                 self.logger.debug(
-                    "Cycle %d in %.2fs (sleep %ss)",
+                    "Cycle %d in %.2fs (sleep %.2fs)",
                     cycle,
                     elapsed,
                     remaining,
                 )
-                if remaining == 0:
+                if remaining <= 0:
                     continue
                 try:
-                    await asyncio.wait_for(
-                        self._stop_event.wait(), timeout=remaining
-                    )
+                    await asyncio.wait_for(self._stop_event.wait(), timeout=remaining)
                 except asyncio.TimeoutError:
-                    # Timeout means we proceed to next cycle
                     pass
 
     async def run(self, config_path: Optional[str] = None) -> None:
         """Entry point to run continuous monitoring until stopped."""
         try:
-            # Config doesn't take a path param currently; instantiation
-            # loads env + file. If future version accepts a path adapt.
             config = Config()
-        except Exception as e:  # Config load failure
+        except Exception as e:
             logging.getLogger(__name__).critical(
                 "Configuration load failed: %s", e, exc_info=True
             )
             sys.exit(2)
 
-        # Validate essential config pieces
         app_ids: List[str] = getattr(config, "app_ids", [])
         if not app_ids:
             self.logger.warning("No app IDs configured; exiting.")
             return
-            cfg_dict = getattr(config, "to_dict", lambda: {})()
-            self.logger.info("Configuration loaded: %s", cfg_dict)
 
-            # Create monitor
-            self.monitor = TestFlightMonitor(config)
-            self.running = True
-
-            # Setup signals now that loop exists
-            self.setup_signal_handlers()
-            if self._defer_signal_setup:
-                # Second attempt (edge case)
-                self.setup_signal_handlers()
-
-            self.logger.info("TestFlight monitoring started")
+        if hasattr(config, "to_dict") and callable(getattr(config, "to_dict")):
             try:
-                await self._monitor_loop(config)
-            finally:
-                self.logger.info("TestFlight monitoring stopped")
+                cfg_info: Any = config.to_dict()  # type: ignore[attr-defined]
+                self.logger.info("Configuration loaded: %s", cfg_info)
+            except Exception:  # pragma: no cover - defensive
+                self.logger.debug("Config to_dict() failed", exc_info=True)
+
+        self.monitor = TestFlightMonitor(config)
+        self.running = True
+        self.setup_signal_handlers()
+        if self._defer_signal_setup:
+            self.setup_signal_handlers()
+
+        self.logger.info("TestFlight monitoring started")
+        try:
+            await self._monitor_loop(config)
+        finally:
+            self.logger.info("TestFlight monitoring stopped")
 
     # ---------------------------- Single Check -----------------------------
     async def run_single_check(self, config_path: Optional[str]) -> int:
@@ -280,24 +262,17 @@ class CLIApplication:
         async with monitor:
             results = await monitor.check_multiple_apps(app_ids)
             for result in results:
-                status = (
-                    "Available" if result.get("available") else "Not Available"
-                )
+                status = "Available" if result.get("available") else "Not Available"
                 if result.get("available"):
                     exit_code = 0  # explicit for clarity
                 print(f"{result['app_id']}: {status}")
         return exit_code
 
- 
+
 def main():
     """CLI entry point with argument parsing."""
     parser = argparse.ArgumentParser(description="TestFlight Monitor")
     parser.add_argument("--config", help="Path to config file")
-    parser.add_argument(
-        "--gui",
-        action="store_true",
-        help="Launch GUI interface",
-    )
     parser.add_argument(
         "--check",
         "--once",
@@ -326,16 +301,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    if args.gui:
-        try:
-            from gui import TestFlightGUI  # type: ignore
-        except Exception as e:  # pragma: no cover
-            print(f"GUI unavailable: {e}")
-            sys.exit(4)
-        gui = TestFlightGUI()
-        gui.run()
-        return
 
     if args.validate:
         try:

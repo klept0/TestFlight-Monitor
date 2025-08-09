@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["TestFlightMonitor"]
 
+
 class TestFlightMonitor:
     """Monitor TestFlight app codes for availability.
 
@@ -39,9 +40,7 @@ class TestFlightMonitor:
         """Run a single monitoring cycle over all configured app IDs."""
         await self.check_multiple_apps(self.config.app_ids)
 
-    async def check_multiple_apps(
-        self, app_ids: List[str]
-    ) -> List[Dict[str, Any]]:
+    async def check_multiple_apps(self, app_ids: List[str]) -> List[Dict[str, Any]]:
         results: List[Dict[str, Any]] = []
         for app_id in app_ids:
             result = await self._check_single_app(app_id)
@@ -49,7 +48,7 @@ class TestFlightMonitor:
         return results
 
     async def _check_single_app(self, app_id: str) -> Dict[str, Any]:
-    now = datetime.now()
+        now = datetime.now()
         # Cache check
         cached = self._cache.get(app_id)
         if cached and (now - cached["timestamp"]) < self._cache_ttl:
@@ -94,9 +93,7 @@ class TestFlightMonitor:
                 text = await resp.text()
                 available = self._interpret_page(text)
                 if available:
-                    logger.info(
-                        "Potential availability detected for %s", app_id
-                    )
+                    logger.info("Potential availability detected for %s", app_id)
                 return available
         except Exception as e:  # noqa: BLE001
             logger.warning("Fetch failed for %s: %s", app_id, e)
@@ -136,3 +133,7 @@ class TestFlightMonitor:
     def interpret_page(self, html: str) -> bool:
         """Public wrapper exposing availability heuristic."""
         return self._interpret_page(html)
+
+
+# Prevent pytest from trying to collect TestFlightMonitor as a test class
+TestFlightMonitor.__test__ = False  # type: ignore[attr-defined]

@@ -1,29 +1,19 @@
 # TestFlight Monitor
 
-A cross-platform Python GUI app to monitor [Apple TestFlight](https://testflight.apple.com/) invite codes for open slots, with notification support via [Apprise](https://github.com/caronc/apprise).  
-The app features a modern, resizable Tkinter interface with dark/light mode, dynamic status display, and heartbeat notifications.
+A lightweight Python CLI tool to monitor [Apple TestFlight](https://testflight.apple.com/) invite codes for open slots, with notification support via [Apprise](https://github.com/caronc/apprise).
 
 ---
 
 ## Features
 
-- **Monitor multiple TestFlight codes** for open slots
-- **Desktop GUI** with dynamic resizing and dark/light mode
-- **Apprise notifications** (push, email, Discord, etc.)
-- **Heartbeat notification** every 6 hours to confirm the app is running
-- **Manual and automatic status updates**
-- **Add/remove codes** via menu
-- **Edit Apprise settings** in-app
-- **Minimize to taskbar or (optionally) system tray**
-- **No credentials hardcoded**—all settings are editable and saved locally
+- Monitor multiple TestFlight codes for open slots
+- Apprise notifications (push, email, Discord, etc.)
+- Structured / JSON logging support
+- Graceful shutdown via signals
+- One-off check mode (`--check`)
 
 
 ---
-
-## Screenshots
-
-![light mode](https://github.com/user-attachments/assets/e0fe4664-8760-46a9-bf4d-9e47200beb34)
-![dark mode](https://github.com/user-attachments/assets/e47a896f-bec7-4e30-ab7e-beb2549128b7)
 
 ---
 
@@ -140,7 +130,6 @@ The tests mock network calls; no external HTTP traffic is performed.
 ## Future Enhancements
 
 - Advanced HTML parsing (structured) for higher accuracy
-- GUI integration improvements & packaging
 - Async test fixtures for richer simulation
 
 ---
@@ -175,4 +164,43 @@ python -m main --check
 ```
 
 Update `config.json` or use environment variables (`TESTFLIGHT_APP_IDS`, etc.) to configure behavior.
+
+---
+
+## Quick Start (Ready for Use)
+
+1. Populate `config.json` (or set `TESTFLIGHT_APP_IDS`). At minimum:
+
+```json
+{ "app_ids": ["YOURCODE" ] }
+```
+2. Install dependencies:
+
+```sh
+pip install -r requirements.txt
+```
+3. Run continuous monitoring:
+
+```sh
+python -m main --log-level INFO
+```
+4. (Optional) Structured logs:
+
+```sh
+python -m main --log-json --log-utc
+```
+5. One-off check:
+
+```sh
+python -m main --check
+```
+
+Environment-only setup (no config file):
+
+```sh
+export TESTFLIGHT_APP_IDS=CODE1,CODE2
+python -m main
+```
+
+The application is now production-ready in CLI form (GUI removed). Add your preferred Apprise notification endpoints via env or `config.json` to receive alerts when availability appears.
 
