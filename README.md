@@ -30,10 +30,6 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-## CLI Usage
-
-The application exposes both a continuous monitor loop and one-off checks.
-
 Basic help:
 
 ```sh
@@ -63,6 +59,7 @@ Optional flags:
 - `--log-level DEBUG` for verbose logging
 - `--log-utc` to output timestamps in UTC ISO-8601
 - `--once` alias for `--check`
+- `--self-test` run an internal dry run (config + simulated cycle) and exit
 
 ## Configuration
 
@@ -93,6 +90,8 @@ Environment variable overrides (comma-separated where applicable):
 | EMAIL_* | Email notification settings |
 | LOG_LEVEL | Log level (fallback) |
 | LOG_FILE | Log filename |
+| TFM_NOTIFY_COOLDOWN | Seconds between notifications for same app (default 600) |
+| TFM_LOG_JSON | Force JSON logs if set (1/true) |
 
 ## Logging
 
@@ -115,7 +114,7 @@ python -m main --log-utc
 
 ## Notifications
 
-Notifications use [Apprise](https://github.com/caronc/apprise). Configure any combination of Discord, Slack, or Email. Rate limiting prevents spam (per app ID minimal interval 10 minutes in sample).
+Notifications use [Apprise](https://github.com/caronc/apprise). Configure any combination of Discord, Slack, or Email. Per-app cooldown defaults to 600s (override via `TFM_NOTIFY_COOLDOWN`).
 
 ## Testing
 
@@ -136,14 +135,16 @@ The tests mock network calls; no external HTTP traffic is performed.
 
 ## Minimal Deployment
 
-This repository now contains only runtime essentials:
+Current repository contents (lean runtime + minimal scaffolding):
 
 - `main.py`, `monitor.py`, `notifications.py`, `config.py`
-- `config.json` (edit with your values)
+- `config.json` (active configuration)
+- `config.sample.json` (copy & edit to create `config.json`)
 - `requirements.txt`
 - `README.md`, `LICENSE`
-
-Development helper files (Makefile, CI workflow, sample config, editor configs) were removed for a lean production footprint. Reintroduce them as needed in a fork if you require automated linting or formatting.
+- `.editorconfig` (basic formatting guidance)
+- Optional stubs: `Makefile`, `pyproject.toml` (currently placeholders)
+- `.github/workflows/ci.yml` (basic CI example; expand as needed)
 
 To enable structured JSON logs:
 
@@ -171,29 +172,33 @@ Update `config.json` or use environment variables (`TESTFLIGHT_APP_IDS`, etc.) t
 
 1. Populate `config.json` (or set `TESTFLIGHT_APP_IDS`). At minimum:
 
-```json
-{ "app_ids": ["YOURCODE" ] }
-```
+	```json
+	{ "app_ids": ["YOURCODE" ] }
+	```
+
 2. Install dependencies:
 
-```sh
-pip install -r requirements.txt
-```
+	```sh
+	pip install -r requirements.txt
+	```
+
 3. Run continuous monitoring:
 
-```sh
-python -m main --log-level INFO
-```
+	```sh
+	python -m main --log-level INFO
+	```
+
 4. (Optional) Structured logs:
 
-```sh
-python -m main --log-json --log-utc
-```
+	```sh
+	python -m main --log-json --log-utc
+	```
+
 5. One-off check:
 
-```sh
-python -m main --check
-```
+	```sh
+	python -m main --check
+	```
 
 Environment-only setup (no config file):
 
@@ -203,4 +208,54 @@ python -m main
 ```
 
 The application is now production-ready in CLI form (GUI removed). Add your preferred Apprise notification endpoints via env or `config.json` to receive alerts when availability appears.
+
+---
+
+## Recommended Enhancements (Optional)
+
+To harden and automate the project, consider adding:
+
+1. CI Workflow Expansion (`.github/workflows/ci.yml`):
+	- Run matrix for Python 3.10–3.13
+	- Steps: install deps, run `pytest -q`, upload coverage (Codecov)
+2. Type Checking:
+	- Add mypy config (e.g. `mypy.ini`) and run in CI
+3. Linting & Formatting:
+	- Tools: `ruff` (fast lint + format) or `black` + `isort`
+4. Security Scans:
+	- `pip-audit` or `safety` in CI for dependency CVEs
+5. Packaging:
+	- Fill in `pyproject.toml` with project metadata and entry point
+6. Container Image:
+	- Provide minimal Python slim image with non-root user
+7. Observability:
+	- Add Prometheus-style metrics endpoint (if turned into a service)
+8. Retry / Circuit Breaking:
+	- Wrap network fetch with jittered backoff & failure counters
+9. Notification Rate Limiting:
+	- Maintain per-app last-notified timestamp to avoid spam (extend existing logic if added)
+10. Test Coverage Targets:
+	- Add `coverage` run and fail CI under threshold (e.g., 85%)
+
+ 
+### Example CI snippet (conceptual)
+```yaml
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+	 runs-on: ubuntu-latest
+	 strategy:
+		matrix:
+		  python-version: ["3.10", "3.11", "3.12", "3.13"]
+	 steps:
+		- uses: actions/checkout@v4
+		- uses: actions/setup-python@v5
+		  with:
+			 python-version: ${{ matrix.python-version }}
+		- run: pip install -r requirements.txt pytest
+		- run: pytest -q
+```
+
+If you want any of these implemented now, specify which and they can be added directly.
 

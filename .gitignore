@@ -1,3 +1,12 @@
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+.venv/
+logs/*.log
+*.pyc
+dist/
+build/
+*.egg-info/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

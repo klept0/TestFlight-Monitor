@@ -188,7 +188,11 @@ class CLIApplication:
                         exc_info=True,
                     )
                     try:
-                        await asyncio.wait_for(self._stop_event.wait(), timeout=backoff)
+                        # Jitter backoff +/- 20% to avoid sync collisions
+                        import random
+
+                        jitter = backoff * (0.8 + random.random() * 0.4)
+                        await asyncio.wait_for(self._stop_event.wait(), timeout=jitter)
                     except asyncio.TimeoutError:
                         pass
                     backoff = min(backoff * 1.8, max_backoff)
@@ -299,6 +303,11 @@ def main():
         action="store_true",
         help="Emit structured JSON log lines",
     )
+    parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help="Run a quick internal self-test (config load + one dry cycle) and exit",
+    )
 
     args = parser.parse_args()
 
@@ -320,6 +329,30 @@ def main():
         utc=args.log_utc,
         json_logs=args.log_json,
     )
+
+    if args.self_test:
+        # Minimal self-test: validate config and run one cycle with network disabled
+        try:
+            cfg = Config()
+            app.monitor = TestFlightMonitor(cfg)
+            # Monkeypatch monitor network fetch to always return False quickly
+            if hasattr(app.monitor, "_fetch_availability"):
+
+                async def _fake_fetch(app_id: str) -> bool:  # type: ignore
+                    return False
+
+                setattr(app.monitor, "_fetch_availability", _fake_fetch)
+
+            async def run_once():
+                async with app.monitor:  # type: ignore
+                    await app.monitor.run_cycle()  # type: ignore
+
+            asyncio.run(run_once())
+            print("✓ Self-test passed")
+            sys.exit(0)
+        except Exception as e:  # pragma: no cover
+            print(f"✗ Self-test failed: {e}")
+            sys.exit(5)
 
     if args.check:
         exit_code = asyncio.run(app.run_single_check(config_path=args.config))
