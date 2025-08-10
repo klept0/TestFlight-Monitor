@@ -33,20 +33,18 @@ class Config:
     app_ids: List[str] = field(default_factory=list)
     check_interval_seconds: int = 300  # seconds between cycles
     cache_ttl_minutes: int = 5
-    notifications: NotificationConfig = field(
-        default_factory=NotificationConfig
-    )
+    notifications: NotificationConfig = field(default_factory=NotificationConfig)
     log_level: str = "INFO"
     log_file: str = "testflight_monitor.log"
 
     def __post_init__(self) -> None:
-    # If user provided app_ids in constructor, remember so file
-    # won't override them from config.json
-    explicit = bool(self.app_ids)
-    self._load_from_env()
-    # Only load app_ids from file if still empty
-    self._load_from_file(load_app_ids=not self.app_ids and not explicit)
-    self._validate()
+        # If user provided app_ids in constructor, remember so file
+        # won't override them from [config.json](http://_vscodecontentref_/1)
+        explicit = bool(self.app_ids)
+        self._load_from_env()
+        # Only load app_ids from file if still empty
+        self._load_from_file(load_app_ids=not self.app_ids and not explicit)
+        self._validate()
 
     def _load_from_env(self) -> None:
         """Load configuration from environment variables."""
@@ -64,9 +62,7 @@ class Config:
             self.cache_ttl_minutes = int(env_ttl)
 
         # Notification settings
-        self.notifications.discord_webhook_url = os.getenv(
-            "DISCORD_WEBHOOK_URL"
-        )
+        self.notifications.discord_webhook_url = os.getenv("DISCORD_WEBHOOK_URL")
         self.notifications.slack_webhook_url = os.getenv("SLACK_WEBHOOK_URL")
         self.notifications.email_smtp_server = os.getenv("EMAIL_SMTP_SERVER")
 
@@ -112,11 +108,7 @@ class Config:
             try:
                 with open(config_file, "r") as f:
                     config_data = json.load(f)
-                if (
-                    load_app_ids
-                    and "app_ids" in config_data
-                    and not self.app_ids
-                ):
+                if load_app_ids and "app_ids" in config_data and not self.app_ids:
                     self.app_ids = config_data["app_ids"]
                 # Other scalar fields
                 for key, value in config_data.items():
@@ -148,9 +140,7 @@ class Config:
                 raise ValueError(f"Invalid app ID: {app_id}")
 
         # Clean up app IDs
-        self.app_ids = [
-            app_id.strip() for app_id in self.app_ids if app_id.strip()
-        ]
+        self.app_ids = [app_id.strip() for app_id in self.app_ids if app_id.strip()]
 
         if self.check_interval_seconds < 60:
             logger.warning(
@@ -175,9 +165,7 @@ class Config:
         if not has_notification:
             logger.warning("No notification methods configured")
 
-        logger.info(
-            "Configuration validated. Monitoring %d apps", len(self.app_ids)
-        )
+        logger.info("Configuration validated. Monitoring %d apps", len(self.app_ids))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary for logging/debugging."""
