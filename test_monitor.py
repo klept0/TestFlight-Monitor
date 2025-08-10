@@ -5,7 +5,7 @@ from monitor import TestFlightMonitor
 from main import CLIApplication
 
 
-def test_monitor_cycle_basic():
+def test_monitor_cycle_basic() -> None:
     cfg = Config(app_ids=["FAKECODE"])
 
     async def run():
@@ -26,7 +26,7 @@ def test_monitor_cycle_basic():
     assert "available" in results[0]
 
 
-def test_cli_single_check():
+def test_cli_single_check() -> None:
     cfg = Config(app_ids=["FAKECODE2"])
 
     async def run():
@@ -60,7 +60,7 @@ def test_cli_single_check():
     assert exit_code == 0
 
 
-def test_interpret_page_heuristics():
+def test_interpret_page_heuristics() -> None:
     cfg = Config(app_ids=["FAKE"])
     monitor = TestFlightMonitor(cfg)
     positive = "<html><body><h1>Join the beta now</h1></body></html>"
@@ -71,7 +71,7 @@ def test_interpret_page_heuristics():
     assert monitor.interpret_page(ambiguous) is False
 
 
-def test_cli_version_flag(capsys=None):  # type: ignore[no-untyped-def]
+def test_cli_version_flag(capsys=None) -> None:  # type: ignore[no-untyped-def]
     import sys
     import main as main_module
 
@@ -86,7 +86,7 @@ def test_cli_version_flag(capsys=None):  # type: ignore[no-untyped-def]
         assert captured
 
 
-def test_monitor_backoff_behavior():
+def test_monitor_backoff_behavior() -> None:
     """Ensure monitor loop retries after failures and eventually succeeds.
 
     Uses a stub monitor that fails twice then succeeds. We stop the loop
