@@ -10,6 +10,10 @@
         "discord_webhook_url": null,
         "slack_webhook_url": null,
         "email_smtp_server": null,
-        "email_recipients": []
+    "email_recipients": [],
+    "pushover_user_key": "PUSHOVER_USER_KEY_HERE",
+    "pushover_api_token": "PUSHOVER_API_TOKEN_HERE",
+    "pushover_priority": null,
+    "pushover_sound": null
     }
 }

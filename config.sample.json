@@ -10,6 +10,10 @@
 		"email_smtp_port": 587,
 		"email_username": null,
 		"email_password": null,
-		"email_recipients": []
+		"email_recipients": [],
+		"pushover_user_key": "PUSHOVER_USER_KEY_HERE",
+		"pushover_api_token": "PUSHOVER_API_TOKEN_HERE",
+		"pushover_priority": null,
+		"pushover_sound": null
 	}
 }
